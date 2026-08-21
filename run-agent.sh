@@ -2,8 +2,8 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-if [ ! -d ".venv" ]; then
-  echo "Virtual environment not found. Running setup-mac.sh first..."
+if [ ! -d ".venv" ] || ! .venv/bin/python -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)' >/dev/null 2>&1; then
+  echo "A .venv created with Python 3.11+ is required. Running setup-mac.sh..."
   bash setup-mac.sh
 fi
 

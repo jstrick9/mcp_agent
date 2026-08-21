@@ -13,7 +13,7 @@ The project also includes `agent.py`, a small local bridge that connects **Ollam
 ## What you need
 
 - MacBook Pro with macOS
-- Python 3.11+ (Python 3.13 works)
+- Python 3.11 or newer (the `mcp` package requires Python 3.10+; setup prefers 3.13/3.12/3.11)
 - [Ollama](https://ollama.com) installed and running
 - A tool-calling local model. Recommended starting point:
   - `qwen2.5:7b` for 16 GB RAM Macs
