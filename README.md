@@ -338,3 +338,78 @@ cursor-mcp.planner.example.json
 - `planner_server.py` — MCP server for projects/tasks/notes
 - `planner_agent.py` — Ollama bridge/agent for the planner
 - `run-planner.sh` — launcher
+
+---
+
+# Third MCP agent: Health & Habit Tracker
+
+The repo includes a third MCP server/agent for tracking habits, workouts, meals, and body measurements. All data is stored locally under `MCP_HEALTH_DIR` (default `~/MCPHealth`).
+
+> This tool is for personal tracking only and does not provide medical advice.
+
+## Tools
+
+- `create_habit(name, description, target_per_week, unit)`
+- `list_habits(active_only)`
+- `log_habit(log_date, value, notes, habit_id|habit_name)`
+- `log_workout(activity, duration_minutes, log_date, intensity, calories, distance_km, notes)`
+- `log_meal(description, meal_type, log_date, calories, protein_g, carbs_g, fat_g, notes)`
+- `log_measurement(weight_kg, log_date, body_fat_pct, waist_cm, notes)`
+- `list_logs(log_type, from_date, to_date, limit)`
+- `delete_log(log_id)`
+- `save_health_note(content, append)`
+- `get_daily_summary(for_date)`
+- `get_weekly_report(for_date)`
+
+## Run with Ollama
+
+```bash
+bash run-health.sh
+```
+
+One-shot:
+
+```bash
+bash run-health.sh "Create habits for a 30-min walk, drinking water, and stretching, then log today's walk and a lunch salad."
+```
+
+Use a different model or data directory:
+
+```bash
+bash run-health.sh --model qwen2.5:14b --data-dir ~/Documents/health-data
+```
+
+## Good prompts
+
+```text
+Create habits for walking 5 days per week, drinking 80 oz of water, and stretching daily.
+```
+
+```text
+Log a 45-minute moderate run today that burned 420 calories and covered 6 km.
+```
+
+```text
+Log my breakfast: oatmeal with banana and peanut butter, about 520 calories and 22 grams of protein.
+```
+
+```text
+Give me today's health summary and list habits I still need to complete.
+```
+
+```text
+Give me my weekly report and tell me which habits I'm behind on.
+```
+
+## Claude Desktop / Cursor configs
+
+- `claude_desktop_config.health.example.json`
+- `cursor-mcp.health.example.json`
+
+You can run all three MCP servers together (web research, planner, health) by listing each under `mcpServers`.
+
+## Files
+
+- `health_server.py` — MCP server
+- `health_agent.py` — Ollama bridge/agent
+- `run-health.sh` — launcher

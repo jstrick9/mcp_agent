@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "health-tracker": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/health_server.py"
+      ],
+      "env": {
+        "MCP_HEALTH_DIR": "/Users/YOUR_USERNAME/MCPHealth"
+      }
+    }
+  }
+}
