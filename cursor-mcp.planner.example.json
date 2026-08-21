@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "local-planner": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/planner_server.py"
+      ],
+      "env": {
+        "MCP_PLANNER_DIR": "/Users/YOUR_USERNAME/MCPPlanner"
+      }
+    }
+  }
+}

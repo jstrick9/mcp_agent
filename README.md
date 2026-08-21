@@ -234,3 +234,107 @@ Double-check that:
 - It can write files only into `MCP_NOTES_DIR`.
 - It does not execute shell commands.
 - Review saved notes and citations before relying on them.
+
+---
+
+# Second MCP agent: Local Planner
+
+The repo now includes a second MCP server/agent: `local-planner`. It stores projects, tasks, and Markdown notes on disk.
+
+## What it does
+
+Tools:
+
+- `create_project(name, description)`
+- `list_projects()`
+- `create_task(project, title, notes, priority, due_date, status)`
+- `list_tasks(project, status)`
+- `update_task(project, task_id, ...)`
+- `complete_task(project, task_id)`
+- `delete_task(project, task_id)`
+- `save_project_note(project, content, append)`
+- `get_daily_focus(for_date)`
+
+Default data directory:
+
+```text
+~/MCPPlanner
+```
+
+Override it with:
+
+```bash
+export MCP_PLANNER_DIR=~/Documents/my-planner
+```
+
+## Run the Ollama planner
+
+```bash
+bash run-planner.sh
+```
+
+One-shot:
+
+```bash
+bash run-planner.sh "Create a project called Weekend Yard Work with tasks for mowing, trimming bushes, and buying mulch."
+```
+
+Use a different model:
+
+```bash
+bash run-planner.sh --model qwen2.5:14b
+```
+
+Store planner data elsewhere:
+
+```bash
+bash run-planner.sh --data-dir ~/Documents/planner-data
+```
+
+## Good planner prompts
+
+```text
+Create a project called Home Network Upgrade and break it into at least six tasks with priorities.
+```
+
+```text
+Look at my daily focus and tell me what I should work on first.
+```
+
+```text
+Create a moving checklist project with tasks, due dates, and notes.
+```
+
+```text
+Mark the first task in the Weekend Yard Work project complete and tell me what remains.
+```
+
+## Claude Desktop config for planner
+
+Use:
+
+```text
+claude_desktop_config.planner.example.json
+```
+
+Add it to:
+
+```text
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+You can merge both servers under `mcpServers` so Claude sees web research and planning tools.
+
+## Cursor config for planner
+
+Use:
+
+```text
+cursor-mcp.planner.example.json
+```
+
+## Files
+
+- `planner_server.py` — MCP server for projects/tasks/notes
+- `planner_agent.py` — Ollama bridge/agent for the planner
+- `run-planner.sh` — launcher
