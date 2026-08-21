@@ -1,0 +1,18 @@
+# Python virtual environment
+.venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS
+.DS_Store
+
+# Local env/secrets
+.env
+.env.*
+
+# Local generated notes (if run inside project)
+notes/
+research-notes/
