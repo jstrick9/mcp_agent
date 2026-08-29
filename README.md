@@ -41,6 +41,21 @@ If you do not have Python 3.11+:
 brew install python
 ```
 
+### Confirm the install works (no Ollama needed)
+
+These two checks start the real MCP servers and drive the real agent loop
+against a mock Ollama endpoint. They need no network and no downloaded model,
+so they are the fastest way to confirm a fresh clone is healthy:
+
+```bash
+./.venv/bin/python tests/e2e_mcp.py
+bash tests/e2e_agents.sh
+```
+
+You should see `ALL CHECKS PASSED` and `ALL BRIDGE AGENT CHECKS PASSED`.
+Together they exercise all 23 MCP tools plus one full tool call through each
+bridge agent.
+
 ## 2. Install and start Ollama
 
 Install Ollama from <https://ollama.com> or with Homebrew:

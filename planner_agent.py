@@ -140,7 +140,7 @@ async def run_agent(prompt: str, model: str, data_dir: Path | None) -> str:
                         try:
                             result = await session.call_tool(name, args)
                             result_text = _text_from_content(result.content)
-                            if result.isError:
+                            if getattr(result, "is_error", False):
                                 result_text = f"[tool error]\n{result_text}"
                         except Exception as exc:
                             result_text = f"[exception while calling {name}] {exc}"

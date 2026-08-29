@@ -16,3 +16,8 @@ __pycache__/
 # Local generated notes (if run inside project)
 notes/
 research-notes/
+
+# Test scratch output
+tests/.mock-*.jsonl
+tests/.stderr-*.txt
+tests/.probe-*.jsonl
