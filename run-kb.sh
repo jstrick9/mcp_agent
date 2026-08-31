@@ -10,9 +10,9 @@ fi
 # shellcheck disable=SC1091
 source .venv/bin/activate
 
-if ! python -c "import httpx, mcp, bs4" >/dev/null 2>&1; then
+if ! python -c "import httpx, mcp" >/dev/null 2>&1; then
   echo "Required Python packages are missing. Installing from requirements.txt..."
   python -m pip install -r requirements.txt
 fi
 
-python planner_agent.py "$@"
+python kb_agent.py "$@"

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "knowledge-base": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/kb_server.py"
+      ],
+      "env": {
+        "MCP_KB_DIR": "/Users/YOUR_USERNAME/MCPKnowledge"
+      }
+    }
+  }
+}

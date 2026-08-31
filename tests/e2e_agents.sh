@@ -55,6 +55,7 @@ WORK="$(mktemp -d)"
 run_case "web research"  agent.py         --notes-dir "$WORK/notes"   11435 save_note   '{"filename":"e2e.md","content":"# E2E\n\nBridge test."}' "RESEARCH-DONE" '"saved": true'
 run_case "planner"       planner_agent.py --data-dir  "$WORK/planner" 11436 create_task '{"project":"E2E","title":"Ship it","priority":"high"}' "PLANNER-DONE" '"id"'
 run_case "health"        health_agent.py  --data-dir  "$WORK/health"  11437 create_habit '{"name":"Water","target_per_week":7,"unit":"glasses"}' "HEALTH-DONE" 'Water'
+run_case "knowledge base" kb_agent.py     --data-dir  "$WORK/kb"      11438 save_snippet '{"content":"MCP servers speak JSON-RPC over stdio.","title":"MCP transport","tags":"mcp,stdio"}' "KB-DONE" '"saved": true'
 
 rm -rf "$WORK"
 echo "-----------------------------------------"

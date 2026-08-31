@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
-"""Local Ollama + MCP research agent.
+"""Local Ollama + MCP personal knowledge base agent.
 
-This is a small MCP client/agent that connects Ollama (running on your Mac)
-to this project's MCP server over stdio. Ollama itself is not an MCP client,
-so this script bridges Ollama chat completions to MCP tools.
+Bridges Ollama chat completions to the local knowledge-base MCP server.
 
 Examples:
-  python agent.py "Research the latest Model Context Protocol features and save notes."
-  python agent.py --model qwen2.5:7b
+  python kb_agent.py "Ingest my research notes, then find everything about MCP."
+  python kb_agent.py --model qwen2.5:7b
 """
 
 from __future__ import annotations
@@ -27,12 +25,20 @@ from mcp.client.stdio import stdio_client
 DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:7b")
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/v1/chat/completions")
 PROJECT_DIR = Path(__file__).resolve().parent
-SERVER_PATH = PROJECT_DIR / "server.py"
+SERVER_PATH = PROJECT_DIR / "kb_server.py"
 
-SYSTEM_PROMPT = """You are a careful local research assistant.
-Use web tools to verify current facts before answering. Cite source URLs in your answer.
-When the user asks to save notes or produce a report, call save_note with markdown content.
-Do not invent URLs or facts. Keep tool calls simple and correct."""
+DEFAULT_INGEST_DIRS = [
+    str(Path.home() / "MCPWebResearch" / "notes"),
+    str(Path.home() / "MCPPlanner"),
+    str(Path.home() / "MCPHealth"),
+]
+
+SYSTEM_PROMPT = """You are a local personal knowledge base assistant.
+Answer only from what the knowledge base tools actually return. Search before answering.
+Cite the snippet id and its source_url or source_path for every fact you use.
+If a search returns nothing useful, say so plainly instead of guessing or inventing content.
+When saving, pick short lowercase tags and keep snippets focused on one idea each.
+Confirm what was saved, updated, or imported."""
 
 
 def _text_from_content(content: Any) -> str:
@@ -44,7 +50,6 @@ def _text_from_content(content: Any) -> str:
             if text:
                 parts.append(str(text))
         else:
-            # Best-effort conversion for structured/embedded content.
             if hasattr(item, "model_dump"):
                 parts.append(json.dumps(item.model_dump(), ensure_ascii=False))
             elif isinstance(item, dict):
@@ -71,41 +76,37 @@ def _mcp_tool_to_openai(tool: Any) -> dict[str, Any]:
 
 
 async def _ollama_chat(client: httpx.AsyncClient, model: str, messages: list[dict[str, Any]], tools: list[dict[str, Any]]) -> dict[str, Any]:
-    payload = {
-        "model": model,
-        "messages": messages,
-        "tools": tools,
-        "tool_choice": "auto",
-        "stream": False,
-        "options": {"temperature": 0.1},
-    }
-    response = await client.post(OLLAMA_URL, json=payload, timeout=180.0)
+    response = await client.post(
+        OLLAMA_URL,
+        json={
+            "model": model,
+            "messages": messages,
+            "tools": tools,
+            "tool_choice": "auto",
+            "stream": False,
+            "options": {"temperature": 0.1},
+        },
+        timeout=180.0,
+    )
     if response.status_code >= 400:
         raise RuntimeError(f"Ollama returned HTTP {response.status_code}: {response.text[:1000]}")
     return response.json()
 
 
-async def run_agent(prompt: str, model: str, notes_dir: Path | None) -> str:
+async def run_agent(prompt: str, model: str, data_dir: Path | None) -> str:
     env = os.environ.copy()
-    if notes_dir:
-        env["MCP_NOTES_DIR"] = str(notes_dir)
+    if data_dir:
+        env["MCP_KB_DIR"] = str(data_dir)
 
-    server_params = StdioServerParameters(
-        command=sys.executable,
-        args=[str(SERVER_PATH)],
-        env=env,
-    )
+    server_params = StdioServerParameters(command=sys.executable, args=[str(SERVER_PATH)], env=env)
 
     async with stdio_client(server_params) as (read, write):
         async with ClientSession(read, write) as session:
             await session.initialize()
             tools_response = await session.list_tools()
             tools = [_mcp_tool_to_openai(t) for t in tools_response.tools]
-            tool_map = {t.name: t for t in tools_response.tools}
-            tool_names = ", ".join(tool_map)
-
-            print(f"[agent] connected to MCP server; tools: {tool_names}", file=sys.stderr)
-            print(f"[agent] using Ollama model: {model}", file=sys.stderr)
+            print("[agent] connected to knowledge-base MCP server; tools:", ", ".join(t.name for t in tools_response.tools), file=sys.stderr)
+            print("[agent] using Ollama model:", model, file=sys.stderr)
 
             messages: list[dict[str, Any]] = [
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -113,10 +114,9 @@ async def run_agent(prompt: str, model: str, notes_dir: Path | None) -> str:
             ]
 
             async with httpx.AsyncClient() as http:
-                for step in range(10):
+                for _ in range(14):
                     data = await _ollama_chat(http, model, messages, tools)
-                    choice = data["choices"][0]
-                    msg = choice["message"]
+                    msg = data["choices"][0]["message"]
                     messages.append(msg)
 
                     tool_calls = msg.get("tool_calls") or []
@@ -129,8 +129,6 @@ async def run_agent(prompt: str, model: str, notes_dir: Path | None) -> str:
                         try:
                             args = json.loads(raw_args) if isinstance(raw_args, str) else dict(raw_args)
                         except json.JSONDecodeError:
-                            args_text = str(raw_args)
-                            print(f"[agent] invalid JSON arguments for {name}: {args_text}", file=sys.stderr)
                             messages.append(
                                 {
                                     "role": "tool",
@@ -141,7 +139,7 @@ async def run_agent(prompt: str, model: str, notes_dir: Path | None) -> str:
                             )
                             continue
 
-                        print(f"[agent] calling {name}({json.dumps(args, ensure_ascii=False)})", file=sys.stderr)
+                        print("[agent] calling", name, json.dumps(args, ensure_ascii=False), file=sys.stderr)
                         try:
                             result = await session.call_tool(name, args)
                             result_text = _text_from_content(result.content)
@@ -162,8 +160,8 @@ async def run_agent(prompt: str, model: str, notes_dir: Path | None) -> str:
             return "Agent stopped after reaching the tool-call step limit."
 
 
-async def repl(model: str, notes_dir: Path | None) -> None:
-    print("Local Ollama MCP research agent. Type 'exit' or Ctrl-C to quit.", file=sys.stderr)
+async def repl(model: str, data_dir: Path | None) -> None:
+    print("Local Ollama MCP knowledge base. Type 'exit' or Ctrl-C to quit.", file=sys.stderr)
     while True:
         try:
             prompt = input("You> ").strip()
@@ -175,7 +173,7 @@ async def repl(model: str, notes_dir: Path | None) -> None:
         if prompt.lower() in {"exit", "quit"}:
             return
         try:
-            answer = await run_agent(prompt, model, notes_dir)
+            answer = await run_agent(prompt, model, data_dir)
             print("\nAssistant>")
             print(answer)
             print()
@@ -184,25 +182,32 @@ async def repl(model: str, notes_dir: Path | None) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run a local Ollama-powered MCP research agent.")
+    parser = argparse.ArgumentParser(description="Run a local Ollama-powered MCP knowledge base agent.")
     parser.add_argument("prompt", nargs="?", help="Prompt to run once. Omit for interactive mode.")
     parser.add_argument("--model", default=DEFAULT_MODEL, help=f"Ollama model (default: {DEFAULT_MODEL})")
     parser.add_argument(
-        "--notes-dir",
+        "--data-dir",
         type=Path,
-        default=Path(os.environ.get("MCP_NOTES_DIR", Path.home() / "MCPWebResearch" / "notes")),
-        help="Directory for saved notes",
+        default=Path(os.environ.get("MCP_KB_DIR", Path.home() / "MCPKnowledge")),
+        help="Directory for the knowledge base database",
+    )
+    parser.add_argument(
+        "--ingest-dirs",
+        nargs="*",
+        default=None,
+        help="Optional folders to mention for ingest_notes (informational only)",
     )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.ingest_dirs:
+        print("[agent] suggested ingest folders:", ", ".join(args.ingest_dirs), file=sys.stderr)
     if args.prompt:
-        answer = asyncio.run(run_agent(args.prompt, args.model, args.notes_dir))
-        print(answer)
+        print(asyncio.run(run_agent(args.prompt, args.model, args.data_dir)))
     else:
-        asyncio.run(repl(args.model, args.notes_dir))
+        asyncio.run(repl(args.model, args.data_dir))
 
 
 if __name__ == "__main__":

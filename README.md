@@ -53,7 +53,7 @@ bash tests/e2e_agents.sh
 ```
 
 You should see `ALL CHECKS PASSED` and `ALL BRIDGE AGENT CHECKS PASSED`.
-Together they exercise all 23 MCP tools plus one full tool call through each
+Together they exercise all 32 MCP tools plus one full tool call through each
 bridge agent.
 
 ## 2. Install and start Ollama
@@ -421,10 +421,116 @@ Give me my weekly report and tell me which habits I'm behind on.
 - `claude_desktop_config.health.example.json`
 - `cursor-mcp.health.example.json`
 
-You can run all three MCP servers together (web research, planner, health) by listing each under `mcpServers`.
+You can run all four MCP servers together (web research, planner, health, knowledge base) by listing each under `mcpServers`.
 
 ## Files
 
 - `health_server.py` — MCP server
 - `health_agent.py` — Ollama bridge/agent
 - `run-health.sh` — launcher
+
+---
+
+# Fourth MCP agent: Personal Knowledge Base
+
+A searchable long-term memory that ties the other three agents together. Your research agent, planner, and health tracker all *write* notes, but nothing could search them. This agent indexes those folders plus anything you save manually, with real full-text search.
+
+Search uses SQLite's FTS5 extension with BM25 relevance ranking (both ship with Python, so there are no new dependencies). If FTS5 is unavailable on a platform, the server automatically falls back to substring search and reports `"search_mode": "substring"`.
+
+Data is stored under `MCP_KB_DIR` (default `~/MCPKnowledge`) in a single SQLite file, `kb.db`.
+
+## Tools
+
+- `save_snippet(content, title, tags, source_url, source_path, source_type)`
+- `search_kb(query, tag, limit, content_chars)`
+- `list_snippets(tag, source_type, limit, content_chars)`
+- `get_snippet(snippet_id)`
+- `delete_snippet(snippet_id)`
+- `list_tags()`
+- `rename_tag(old_tag, new_tag)`
+- `ingest_notes(directories, tag, recursive)`
+- `kb_stats()`
+
+## Import notes from your other agents
+
+This is the highest-value first step. It pulls `.md` and `.txt` files into the index:
+
+```text
+Ingest my notes from ~/MCPWebResearch/notes, ~/MCPPlanner, and ~/MCPHealth with the tag imported.
+```
+
+Re-running is safe: unchanged files are skipped, changed files are updated in place, and nothing is duplicated. Skips `.git`, `.venv`, and `node_modules`.
+
+## Run with Ollama
+
+```bash
+bash run-kb.sh
+```
+
+One-shot:
+
+```bash
+bash run-kb.sh "Ingest my research notes, then summarize everything I have saved about MCP."
+```
+
+Different model or database location:
+
+```bash
+bash run-kb.sh --model qwen2.5:14b --data-dir ~/Documents/knowledge
+```
+
+## Good prompts
+
+```text
+Save this: FastMCP exposes Python functions as MCP tools via a decorator. Tag it python and mcp.
+```
+
+```text
+Search my knowledge base for stdio transport and cite the source of each result.
+```
+
+```text
+What do I have tagged mcp? List titles and sources.
+```
+
+```text
+Rename the tag py to python everywhere.
+```
+
+```text
+Give me knowledge base stats: how many entries, which sources, and my top tags.
+```
+
+## Search syntax
+
+`search_kb` passes your query to SQLite FTS5, so operators work:
+
+| Query | Meaning |
+|---|---|
+| `stdio transport` | entries containing both words |
+| `"stdio transport"` | that exact phrase |
+| `mcp OR sourdough` | either word |
+| `mcp NOT health` | `mcp` but not `health` |
+| `protocol*` | prefix match |
+
+If a query contains malformed FTS5 syntax, the server retries it as literal quoted phrases rather than failing, so unusual punctuation never produces an error.
+
+## Claude Desktop / Cursor configs
+
+- `claude_desktop_config.kb.example.json`
+- `cursor-mcp.kb.example.json`
+
+You can run all four MCP servers together by listing each under `mcpServers`.
+
+## Files
+
+- `kb_server.py` — MCP server with SQLite FTS5 search
+- `kb_agent.py` — Ollama bridge/agent
+- `run-kb.sh` — launcher
+
+## Safety notes
+
+- The database and all writes stay inside `MCP_KB_DIR`.
+- `ingest_notes` reads only the folders you explicitly pass to it.
+- It reads `.md` and `.txt` files only, and never executes shell commands.
+- Notes may contain personal information. Back up `kb.db` like any other data file.
