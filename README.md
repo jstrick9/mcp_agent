@@ -53,7 +53,7 @@ bash tests/e2e_agents.sh
 ```
 
 You should see `ALL CHECKS PASSED` and `ALL BRIDGE AGENT CHECKS PASSED`.
-Together they exercise all 32 MCP tools plus one full tool call through each
+Together they exercise all 43 MCP tools plus one full tool call through each
 bridge agent.
 
 ## 2. Install and start Ollama
@@ -421,7 +421,7 @@ Give me my weekly report and tell me which habits I'm behind on.
 - `claude_desktop_config.health.example.json`
 - `cursor-mcp.health.example.json`
 
-You can run all four MCP servers together (web research, planner, health, knowledge base) by listing each under `mcpServers`.
+You can run all five MCP servers together (web research, planner, health, knowledge base, flashcards) by listing each under `mcpServers`.
 
 ## Files
 
@@ -534,3 +534,120 @@ You can run all four MCP servers together by listing each under `mcpServers`.
 - `ingest_notes` reads only the folders you explicitly pass to it.
 - It reads `.md` and `.txt` files only, and never executes shell commands.
 - Notes may contain personal information. Back up `kb.db` like any other data file.
+
+---
+
+# Fifth MCP agent: Learning & Flashcards
+
+A spaced-repetition study system. Build decks from anything you're learning, then review cards on a schedule that adapts to how well you actually remember them.
+
+Scheduling uses the **SM-2 algorithm** (SuperMemo 2), the same family of algorithms Anki is built on. Cards you find hard come back sooner; cards you know well stretch out to weeks and months.
+
+Data is stored under `MCP_FLASHCARDS_DIR` (default `~/MCPFlashcards`) as three JSON files: `decks.json`, `cards.json`, and `reviews.json`.
+
+## Tools
+
+- `create_deck(name, description, tags)`
+- `list_decks()`
+- `delete_deck(deck)`
+- `add_card(deck, front, back, tags, notes)`
+- `edit_card(card_id, front, back, tags, notes)`
+- `delete_card(card_id)`
+- `list_cards(deck, tag, limit, due_only)`
+- `get_due_cards(deck, limit, include_back)`
+- `record_review(card_id, quality, seconds_spent, session_id, notes)`
+- `get_review_session(session_id, for_date)`
+- `get_stats(deck)`
+
+## How grading works
+
+`record_review` takes a `quality` score from 0 to 5:
+
+| Quality | Meaning | Effect |
+|---|---|---|
+| 0 | Complete blackout | Lapse — card restarts, due tomorrow |
+| 1–2 | Wrong, or recalled only after seeing the answer | Lapse — card restarts |
+| 3 | Correct, but with serious difficulty | Passes, ease factor drops |
+| 4 | Correct after hesitation | Passes, ease factor holds steady |
+| 5 | Perfect recall | Passes, ease factor rises |
+
+Intervals progress 1 day, then 6 days, then each interval is the previous one multiplied by the card's ease factor (which starts at 2.5 and is clamped between 1.3 and whatever repeated perfect reviews build it to).
+
+## Run with Ollama
+
+```bash
+bash run-flashcards.sh
+```
+
+One-shot:
+
+```bash
+bash run-flashcards.sh "Create a deck called MCP Basics with 8 cards covering the protocol fundamentals."
+```
+
+Different model or data directory:
+
+```bash
+bash run-flashcards.sh --model qwen2.5:14b --data-dir ~/Documents/flashcards
+```
+
+Reviews are interactive, so the REPL is the better fit:
+
+```bash
+bash run-flashcards.sh
+```
+
+```text
+You> What's due today? Quiz me on it.
+```
+
+The agent will show you each question, wait for your answer, then ask you to rate your recall from 0 to 5. It does not grade itself.
+
+## Good prompts
+
+```text
+Create a deck called Spanish Food with 10 cards for common restaurant vocabulary.
+```
+
+```text
+Make flashcards from this: MCP servers expose tools over stdio, use JSON-RPC 2.0, and are spawned by the client.
+```
+
+```text
+Quiz me on MCP Basics, ten cards.
+```
+
+```text
+What's my retention this week and which cards do I keep failing?
+```
+
+```text
+Show my study stats and how many cards are due tomorrow.
+```
+
+## Pair it with the knowledge base
+
+The knowledge base agent can pull in notes you've saved, which makes good raw material for cards:
+
+```text
+Search my knowledge base for mcp and make a flashcard deck from what you find.
+```
+
+## Claude Desktop / Cursor configs
+
+- `claude_desktop_config.flashcards.example.json`
+- `cursor-mcp.flashcards.example.json`
+
+You can run all five MCP servers together by listing each under `mcpServers`.
+
+## Files
+
+- `flashcards_server.py` — MCP server with SM-2 scheduling
+- `flashcards_agent.py` — Ollama bridge/agent
+- `run-flashcards.sh` — launcher
+
+## Safety notes
+
+- All data stays inside `MCP_FLASHCARDS_DIR`.
+- The server never executes shell commands or makes network calls.
+- Review history is retained when you delete a deck, so `get_stats` stays meaningful.

@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "flashcards": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/flashcards_server.py"
+      ],
+      "env": {
+        "MCP_FLASHCARDS_DIR": "/Users/YOUR_USERNAME/MCPFlashcards"
+      }
+    }
+  }
+}
