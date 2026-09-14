@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "web-research": {
-      "command": "/Users/YOUR_USERNAME/Projects/mcp-web-research-agent/.venv/bin/python",
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
       "args": [
-        "/Users/YOUR_USERNAME/Projects/mcp-web-research-agent/server.py"
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/server.py"
       ],
       "env": {
-        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/Documents/MCP-research-notes"
+        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/MCPWebResearch/notes"
       }
     }
   }

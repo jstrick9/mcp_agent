@@ -1,0 +1,49 @@
+{
+  "mcpServers": {
+    "web-research": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/server.py"
+      ],
+      "env": {
+        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/MCPWebResearch/notes"
+      }
+    },
+    "local-planner": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/planner_server.py"
+      ],
+      "env": {
+        "MCP_PLANNER_DIR": "/Users/YOUR_USERNAME/MCPPlanner"
+      }
+    },
+    "health-tracker": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/health_server.py"
+      ],
+      "env": {
+        "MCP_HEALTH_DIR": "/Users/YOUR_USERNAME/MCPHealth"
+      }
+    },
+    "knowledge-base": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/kb_server.py"
+      ],
+      "env": {
+        "MCP_KB_DIR": "/Users/YOUR_USERNAME/MCPKnowledge"
+      }
+    },
+    "flashcards": {
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
+      "args": [
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/flashcards_server.py"
+      ],
+      "env": {
+        "MCP_FLASHCARDS_DIR": "/Users/YOUR_USERNAME/MCPFlashcards"
+      }
+    }
+  }
+}

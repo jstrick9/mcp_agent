@@ -25,14 +25,21 @@ The project also includes `agent.py`, a small local bridge that connects **Ollam
 Open Terminal and run:
 
 ```bash
-cd ~/Projects
-git clone <your-repo-url> mcp-web-research-agent  # or copy this folder here
-cd ~/Projects/mcp-web-research-agent
+mkdir -p ~/Agents
+cd ~/Agents
+git clone https://github.com/jstrick9/mcp_agent.git
+cd mcp_agent
 
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+`setup-mac.sh` does the same thing and will find or install Python 3.11+ for you:
+
+```bash
+bash setup-mac.sh
 ```
 
 If you do not have Python 3.11+:
@@ -82,7 +89,7 @@ curl http://localhost:11434/api/tags
 From the project folder:
 
 ```bash
-cd ~/Projects/mcp-web-research-agent
+cd ~/Agents/mcp_agent
 source .venv/bin/activate
 python agent.py
 ```
@@ -113,6 +120,32 @@ python agent.py --notes-dir ~/Documents/research-notes
 
 ## 4. Use with Claude Desktop
 
+### All five servers at once
+
+To register every agent in this repo with one paste, start from the generated combined config:
+
+- `claude_desktop_config.all.example.json` — all five servers for Claude Desktop
+- `cursor-mcp.all.example.json` — all five servers for Cursor
+
+Replace `YOUR_USERNAME` with your macOS username, then merge the `mcpServers` object into:
+
+```text
+~/Library/Application Support/Claude/claude_desktop_config.json
+```
+
+Both files declare all five servers — `web-research`, `local-planner`, `health-tracker`, `knowledge-base`, and `flashcards` — each pointing at the shared `.venv/bin/python` and its own data directory.
+
+These two files are **generated**, not hand-written. They are assembled from the per-agent example configs by:
+
+```bash
+./.venv/bin/python tools/build_combined_configs.py          # regenerate
+./.venv/bin/python tools/build_combined_configs.py --check   # verify they are current
+```
+
+`--check` also confirms each entry's environment variable matches what the server script actually reads, so a renamed `MCP_*` variable cannot silently ship a broken config. The check runs as part of `tests/e2e_mcp.py`.
+
+### One server at a time
+
 If you want Claude Desktop to connect directly to the MCP server, edit:
 
 ```text
@@ -125,12 +158,12 @@ Add:
 {
   "mcpServers": {
     "web-research": {
-      "command": "/Users/YOUR_USERNAME/Projects/mcp-web-research-agent/.venv/bin/python",
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
       "args": [
-        "/Users/YOUR_USERNAME/Projects/mcp-web-research-agent/server.py"
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/server.py"
       ],
       "env": {
-        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/Documents/MCP-research-notes"
+        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/MCPWebResearch/notes"
       }
     }
   }
@@ -147,12 +180,12 @@ Create or edit `.cursor/mcp.json` in a workspace:
 {
   "mcpServers": {
     "web-research": {
-      "command": "/Users/YOUR_USERNAME/Projects/mcp-web-research-agent/.venv/bin/python",
+      "command": "/Users/YOUR_USERNAME/Agents/mcp_agent/.venv/bin/python",
       "args": [
-        "/Users/YOUR_USERNAME/Projects/mcp-web-research-agent/server.py"
+        "/Users/YOUR_USERNAME/Agents/mcp_agent/server.py"
       ],
       "env": {
-        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/Documents/MCP-research-notes"
+        "MCP_NOTES_DIR": "/Users/YOUR_USERNAME/MCPWebResearch/notes"
       }
     }
   }
@@ -638,7 +671,7 @@ Search my knowledge base for mcp and make a flashcard deck from what you find.
 - `claude_desktop_config.flashcards.example.json`
 - `cursor-mcp.flashcards.example.json`
 
-You can run all five MCP servers together by listing each under `mcpServers`.
+You can run all five MCP servers together — see `claude_desktop_config.all.example.json` in the [Use with Claude Desktop](#4-use-with-claude-desktop) section.
 
 ## Files
 

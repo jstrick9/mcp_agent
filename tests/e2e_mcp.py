@@ -461,6 +461,25 @@ async def test_flashcards(tmp: Path) -> int:
     return failures
 
 
+def test_combined_configs() -> int:
+    """The generated all-in-one client configs must match the per-agent examples."""
+    import subprocess
+
+    print("  [tools/build_combined_configs.py] verifying generated client configs")
+    proc = subprocess.run(
+        [str(REPO / ".venv" / "bin" / "python"), str(REPO / "tools" / "build_combined_configs.py"), "--check"],
+        capture_output=True,
+        text=True,
+    )
+    for line in (proc.stdout + proc.stderr).strip().splitlines():
+        print(f"    {line}")
+    if proc.returncode != 0:
+        print("    FAIL  combined configs are stale or invalid")
+        return 1
+    print("    ok    combined configs are current and valid")
+    return 0
+
+
 async def main() -> int:
     failures = 0
     tmp = Path(tempfile.mkdtemp(prefix="mcp-e2e-"))
@@ -588,6 +607,10 @@ async def main() -> int:
     failures += test_sm2_math()
     print("\n6) flashcards_server.py -- decks, cards, reviews")
     failures += await test_flashcards(tmp)
+
+    # ---- 6. Combined client configs ----
+    print("\n7) combined Claude Desktop / Cursor configs")
+    failures += test_combined_configs()
 
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"\n{'ALL CHECKS PASSED' if failures == 0 else f'{failures} FAILURE(S)'}")
