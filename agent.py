@@ -55,9 +55,10 @@ def _text_from_content(content: Any) -> str:
 
 
 def _mcp_tool_to_openai(tool: Any) -> dict[str, Any]:
-    schema = getattr(tool, "inputSchema", None)
+    # mcp 2.x exposes input_schema; 1.x used the camelCase wire name.
+    schema = getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", None)
     if schema is None and isinstance(tool, dict):
-        schema = tool.get("inputSchema")
+        schema = tool.get("input_schema") or tool.get("inputSchema")
     if not schema:
         schema = {"type": "object", "properties": {}}
     return {

@@ -45,6 +45,7 @@ run_case() { # label script extra_flag dir port tool args final expect_fragment
   [ "$rc" -eq 0 ] || { echo "  FAIL: non-zero exit"; failures=$((failures+1)); }
   echo "$out" | grep -q "$final" || { echo "  FAIL: final answer not printed"; failures=$((failures+1)); }
   "$PY" tests/check_tool_result.py "$log" "$frag" || failures=$((failures+1))
+  "$PY" tests/check_tool_schemas.py "$log" "$tool" || failures=$((failures+1))
 
   # confirm data really landed on disk
   echo "  files created: $(find "$dir" -type f 2>/dev/null | wc -l | tr -d ' ') in $dir"
